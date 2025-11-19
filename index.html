@@ -102,6 +102,7 @@ body {
   gap: 6px;
   width: max-content;
   animation: scrollLibrary 20s linear infinite;
+  animation-play-state: running;
 }
 
 @keyframes scrollLibrary {
@@ -134,8 +135,11 @@ body {
   top: 0;
   width: 64px;
   height: 64px;
-  transform: scaleX(-1); /* invert horizontally */
+  transform: scaleX(-1);
   animation: nyanMove 10s linear infinite;
+  animation-play-state: running;
+  opacity: 1;
+  transition: opacity 0.3s ease; /* smooth fade */
 }
 
 @keyframes nyanMove {
@@ -159,7 +163,7 @@ body {
 </div>
 
 <div class="nyan-track">
-  <img src="https://media.giphy.com/media/sIIhZliB2McAo/giphy.gif" class="nyan-cat">
+  <img src="https://media.giphy.com/media/sIIhZliB2McAo/giphy.gif" class="nyan-cat" id="nyanCat">
 </div>
 
 <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
@@ -168,6 +172,7 @@ body {
 const boardEl = document.getElementById('board');
 const libraryInner = document.getElementById('libraryInner');
 const shuffleSound = document.getElementById('shuffleSound');
+const nyanCat = document.getElementById('nyanCat');
 
 const grid = 3;
 let cells = [];
@@ -224,7 +229,7 @@ function init(){
 
 function renderLibrary(){
   libraryInner.innerHTML = '';
-  const fullList = [...library, ...library]; // duplicate for infinite loop
+  const fullList = [...library, ...library];
   fullList.forEach(img=>{
     const thumb = document.createElement('img');
     thumb.src = img.src;
@@ -233,6 +238,24 @@ function renderLibrary(){
     thumb.addEventListener('touchstart', e=>{ e.target.dataset.dragSrc = img.src; });
     libraryInner.appendChild(thumb);
   });
+
+  // Hover/touch pause with fade
+  const pauseAnimations = () => {
+    libraryInner.style.animationPlayState = 'paused';
+    nyanCat.style.animationPlayState = 'paused';
+    nyanCat.style.opacity = 0; // fade out
+  };
+  const resumeAnimations = () => {
+    libraryInner.style.animationPlayState = 'running';
+    nyanCat.style.animationPlayState = 'running';
+    nyanCat.style.opacity = 1; // fade in
+  };
+
+  libraryInner.parentElement.addEventListener('mouseenter', pauseAnimations);
+  libraryInner.parentElement.addEventListener('mouseleave', resumeAnimations);
+
+  libraryInner.parentElement.addEventListener('touchstart', pauseAnimations);
+  libraryInner.parentElement.addEventListener('touchend', resumeAnimations);
 }
 
 function renderBoard(){
@@ -318,5 +341,3 @@ init();
 </script>
 </body>
 </html>
-
-
