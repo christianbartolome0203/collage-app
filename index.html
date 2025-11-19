@@ -21,9 +21,9 @@ body {
   background: #eef2ff;
   padding: 8px;
   border-radius: 12px;
-  width: 90vw; /* responsive width */
-  max-width: 600px; /* limits on large screens */
-  aspect-ratio: 1/1; /* maintain square board */
+  width: 90vw;
+  max-width: 600px;
+  aspect-ratio: 1/1;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
 }
@@ -66,24 +66,21 @@ body {
 
 .center-overlay {
   position: absolute;
-  top: 0;
+  bottom: 5px;         /* move text to bottom */
   left: 0;
   width: 100%;
-  height: 100%;
   z-index: 10;
   color: #fff;
   font-weight: bold;
-  font-size: 4vw; /* responsive font size */
-  max-font-size: 18px;
+  font-size: 14px;     /* smaller size */
   text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3); /* semi-transparent for readability */
+  border-radius: 6px;
   pointer-events: none;
   text-shadow: 1px 1px 3px #000;
-  animation: pridePulse 3s infinite;
 }
 
 @keyframes pridePulse {
@@ -120,7 +117,6 @@ body {
 }
 
 @media (max-width: 480px){
-  .center-overlay { font-size: 5vw; }
   .library img { width: 40px; height: 40px; }
   .board { gap: 3px; padding: 4px; }
 }
@@ -133,7 +129,6 @@ body {
 <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
 
 <script>
-// JavaScript remains almost the same
 const boardEl = document.getElementById('board');
 const libraryEl = document.getElementById('library');
 const shuffleSound = document.getElementById('shuffleSound');
@@ -148,7 +143,7 @@ const libraryURLs = [
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/08d659392_Mockup7.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/1b1d214df_Mockup1.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/55fdaf344_Mockup3.png",
-"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/62da92f9e_Mockup8.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/62da92f9_Mockup8.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/56c98e0b1_Mockup4.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/9a7405c30_Mockup6.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/d88708189_Mockup5.png",
