@@ -5,38 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Collage App</title>
 <style>
-body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; justify-content:center; padding:20px; }
-.board { display:grid; gap:6px; background:#eef2ff; padding:12px; border-radius:12px; width:600px; height:600px; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); position:relative; }
-.cell { background:#eceff6; border-radius:8px; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(15,23,42,0.06); perspective:600px; }
-.cell-inner { width:100%; height:100%; transition: transform 0.6s; transform-style: preserve-3d; position:relative; }
-.cell img { width:100%; height:100%; object-fit:cover; object-position:center center; backface-visibility:hidden; border-radius:8px; }
+body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; flex-direction:column; align-items:center; padding:20px; }
+.board { display:grid; gap:6px; background:#eef2ff; padding:12px; border-radius:12px; width:600px; height:600px; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); }
+.cell { background:#eceff6; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(15,23,42,0.06); }
+.cell img { width:100%; height:100%; object-fit:cover; object-position:center center; }
 .cell.center img { object-fit:contain; }
 .center-hint { position:absolute; bottom:4px; left:4px; right:4px; font-size:11px; text-align:center; color:rgba(0,0,0,0.45); }
 .library { display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow:auto; margin-top:12px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; }
 .library img { width:48px; height:48px; object-fit:cover; border-radius:6px; cursor:pointer; border:1px solid #cbd5e1; }
-.particle { position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; opacity:0.8; animation:particleMove 0.8s forwards; }
-@keyframes particleMove { to { transform: translate(var(--x), var(--y)) scale(0); opacity:0; } }
 </style>
 </head>
 <body>
-<div>
-  <div class="board" id="board"></div>
-  <div class="library" id="library"></div>
-  <input type="file" id="fileInput" accept="image/*" style="display:none">
-  <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
-</div>
+<div class="board" id="board"></div>
+<div class="library" id="library"></div>
+<audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
 
 <script>
 const boardEl = document.getElementById('board');
 const libraryEl = document.getElementById('library');
-const fileInput = document.getElementById('fileInput');
 const shuffleSound = document.getElementById('shuffleSound');
 
 const grid = 3;
 let cells = [];
-let pendingCellIndex = null;
 
-// --- GitHub library images ---
+const centerImageSrc = "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(11).jpg";
+
+// Library images (excluding center)
 const libraryURLs = [
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/08d659392_Mockup7.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/1b1d214df_Mockup1.png",
@@ -61,135 +55,83 @@ const libraryURLs = [
 ];
 const library = libraryURLs.map(url => { const img = new Image(); img.src = url; return img; });
 
-// --- Render library thumbnails ---
-library.forEach((img) => {
-  const thumb = document.createElement('img');
-  thumb.src = img.src;
-  thumb.addEventListener('click', () => {
-    if(pendingCellIndex!==null){
-      cells[pendingCellIndex] = { img, src: img.src };
-      renderBoard();
-      pendingCellIndex = null;
-    }
-  });
-  libraryEl.appendChild(thumb);
-});
-
-// --- Initialize cells ---
+// Initialize board
 function init(){
-  cells = Array(grid*grid).fill(null).map(()=>({img:null,src:null}));
+  cells = Array(grid*grid).fill(null).map(()=>({ img:null, src:null }));
   renderBoard();
+  renderLibrary();
 }
 
-// --- Render board ---
+// Render library thumbnails
+function renderLibrary(){
+  library.forEach(img => {
+    const thumb = document.createElement('img');
+    thumb.src = img.src;
+    thumb.draggable = true;
+    thumb.addEventListener('dragstart', e=>{
+      e.dataTransfer.setData('text/plain', img.src);
+    });
+    libraryEl.appendChild(thumb);
+  });
+}
+
+// Render board
 function renderBoard(){
   const centerIndex = Math.floor(grid*grid/2);
   boardEl.innerHTML = '';
   cells.forEach((cell, i) => {
     const div = document.createElement('div');
-    div.className = 'cell';
+    div.className='cell';
     if(i===centerIndex) div.classList.add('center');
-    div.dataset.index = i;
 
-    const innerDiv = document.createElement('div');
-    innerDiv.className='cell-inner';
-    if(cell.src){
-      const imgEl = document.createElement('img');
-      imgEl.src = cell.src;
-      innerDiv.appendChild(imgEl);
+    const imgEl = document.createElement('img');
+    if(i===centerIndex) imgEl.src = centerImageSrc;
+    else if(cell.src) imgEl.src = cell.src;
+    div.appendChild(imgEl);
+
+    // Drag & Drop for non-center
+    if(i!==centerIndex){
+      div.addEventListener('dragover', e=>e.preventDefault());
+      div.addEventListener('drop', e=>{
+        e.preventDefault();
+        const src = e.dataTransfer.getData('text/plain');
+        cells[i] = { img:null, src };
+        renderBoard();
+      });
     }
-    div.appendChild(innerDiv);
 
+    // Click center to randomize
     if(i===centerIndex){
-      const hint = document.createElement('div');
-      hint.className = 'center-hint';
-      hint.textContent = 'Click to randomize others • Double-click to change center';
-      div.appendChild(hint);
-      div.addEventListener('click', ()=>randomizeOtherTiles(true));
-      div.addEventListener('dblclick', ()=>{ pendingCellIndex=i; fileInput.value=null; fileInput.click(); });
-    } else {
-      div.addEventListener('click', ()=>{ pendingCellIndex=i; fileInput.value=null; fileInput.click(); });
+      div.addEventListener('click', randomizeOtherTiles);
     }
 
     boardEl.appendChild(div);
   });
 }
 
-// --- Particle effect based on image average color ---
-function createParticles(x,y, img){
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 1;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img,0,0,1,1);
-  const data = ctx.getImageData(0,0,1,1).data;
-  const color = `rgb(${data[0]},${data[1]},${data[2]})`;
-
-  for(let i=0;i<20;i++){
-    const p = document.createElement('div');
-    p.className='particle';
-    p.style.background=color;
-    const angle=Math.random()*2*Math.PI;
-    const distance=30+Math.random()*50;
-    p.style.setProperty('--x', `${Math.cos(angle)*distance}px`);
-    p.style.setProperty('--y', `${Math.sin(angle)*distance}px`);
-    p.style.left=`${x}px`;
-    p.style.top=`${y}px`;
-    boardEl.appendChild(p);
-    setTimeout(()=>p.remove(),800);
-  }
-}
-
-// --- Randomize non-center tiles with flip + sound + colored particles ---
-function randomizeOtherTiles(animated=false){
+// Randomize non-center tiles
+function randomizeOtherTiles(){
   shuffleSound.currentTime=0;
   shuffleSound.play();
+
   const centerIndex = Math.floor(grid*grid/2);
   let shuffled = [...library];
-  for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
-
-  cells.forEach((cell,i)=>{
+  for(let i=shuffled.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  }
+  let libIdx = 0;
+  for(let i=0;i<grid*grid;i++){
     if(i!==centerIndex){
-      const div = boardEl.children[i];
-      const inner = div.querySelector('.cell-inner');
-      if(animated){
-        inner.style.transform='rotateY(180deg)';
-        const rect=div.getBoundingClientRect();
-        createParticles(
-          rect.left-rect.parentElement.getBoundingClientRect().left + rect.width/2,
-          rect.top-rect.parentElement.getBoundingClientRect().top + rect.height/2,
-          shuffled[i%shuffled.length]
-        );
-        setTimeout(()=>{
-          cells[i]={ img:shuffled[i%shuffled.length], src:shuffled[i%shuffled.length].src };
-          renderBoard();
-        },300);
-      } else {
-        cells[i]={ img:shuffled[i%shuffled.length], src:shuffled[i%shuffled.length].src };
-      }
+      cells[i]={ img:shuffled[libIdx], src:shuffled[libIdx].src };
+      libIdx++;
     }
-  });
-
-  if(!animated) renderBoard();
+  }
+  renderBoard();
 }
 
-// --- Handle file upload ---
-fileInput.addEventListener('change', e => {
-  const file = e.target.files[0];
-  if(!file || pendingCellIndex===null) return;
-  const reader = new FileReader();
-  reader.onload = evt => {
-    const im = new Image();
-    im.src = evt.target.result;
-    cells[pendingCellIndex] = { img: im, src: evt.target.result };
-    renderBoard();
-    pendingCellIndex = null;
-  };
-  reader.readAsDataURL(file);
-});
-
-// --- Initialize app ---
+// Initialize app
 init();
 </script>
 </body>
 </html>
-
