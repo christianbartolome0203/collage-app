@@ -1,258 +1,195 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Rubik Collage Shared Library</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collage App</title>
 <style>
-:root{--bg:#f4f7fb;--card:#ffffff;--muted:#6b7280;--accent:#0f172a;--gap:8px;--board-size:640px;}
-*{box-sizing:border-box}
-body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--accent);margin:0;padding:28px;display:flex;flex-direction:column;align-items:center;gap:20px}
-.container{display:flex;gap:22px;width:100%;max-width:1200px}
-.panel{width:320px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 6px 30px rgba(15,23,42,0.08)}
-h1{font-size:18px;margin:0 0 8px}
-p.lead{margin:0 0 12px;color:var(--muted);font-size:13px}
-label{display:block;font-size:13px;margin-top:10px;color:#111827}
-select,input[type=range],button{width:100%;margin-top:6px}
-.row{display:flex;gap:8px}
-.btn{appearance:none;border:0;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
-.btn.primary{background:#0b74ff;color:white}
-.btn.ghost{background:transparent;border:1px solid #e6eefc;color:var(--accent)}
-.small{font-size:12px;color:var(--muted)}
-.board-card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 6px 30px rgba(15,23,42,0.06);display:flex;flex-direction:column;gap:12px;align-items:center}
-.board{display:grid;gap:6px;background:linear-gradient(180deg,#eef2ff, #fff);padding:12px;border-radius:12px;width:var(--board-size);height:var(--board-size)}
-.cell{width:100%;height:100%;background:#eceff6;border-radius:8px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;border:1px solid rgba(15,23,42,0.06);transition:transform 0.5s ease, box-shadow 0.5s ease;flex-shrink:0;flex-grow:0;}
-.cell img{width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .36s ease, transform 0.5s ease;}
-.cell img.loaded{opacity:1}
-.cell .placeholder{display:none}
-.center-hint{position:absolute;bottom:6px;left:6px;right:6px;text-align:center;font-size:11px;color:rgba(0,0,0,0.45)}
-.library{display:flex;flex-wrap:wrap;gap:6px;max-height:180px;overflow:auto;margin-top:8px;padding:6px;border:1px solid #e2e8f0;border-radius:8px}
-.library img{width:48px;height:48px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid #cbd5e1}
+body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; justify-content:center; padding:20px; }
+.board { display:grid; gap:6px; background:#eef2ff; padding:12px; border-radius:12px; width:600px; height:600px; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); position:relative; }
+.cell { background:#eceff6; border-radius:8px; overflow:hidden; position:relative; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(15,23,42,0.06); perspective:600px; }
+.cell-inner { width:100%; height:100%; transition: transform 0.6s; transform-style: preserve-3d; position:relative; }
+.cell img { width:100%; height:100%; object-fit:cover; object-position:center center; backface-visibility:hidden; border-radius:8px; }
+.cell.center img { object-fit:contain; }
+.center-hint { position:absolute; bottom:4px; left:4px; right:4px; font-size:11px; text-align:center; color:rgba(0,0,0,0.45); }
+.library { display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow:auto; margin-top:12px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; }
+.library img { width:48px; height:48px; object-fit:cover; border-radius:6px; cursor:pointer; border:1px solid #cbd5e1; }
+.particle { position:absolute; width:6px; height:6px; border-radius:50%; pointer-events:none; opacity:0.8; animation:particleMove 0.8s forwards; }
+@keyframes particleMove { to { transform: translate(var(--x), var(--y)) scale(0); opacity:0; } }
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="panel">
-    <h1>Collage Builder Shared Library</h1>
-    <p class="lead">The library of images is preloaded from GitHub. Click the center tile to randomize non-center tiles. Center tile can have its own image/logo.</p>
-
-    <label>Grid size</label>
-    <select id="gridSize">
-      <option value="3" selected>3 × 3 (default)</option>
-      <option value="4">4 × 4</option>
-      <option value="5">5 × 5</option>
-    </select>
-
-    <label>Canvas output size (px)</label>
-    <select id="outputPx">
-      <option value="600">600 × 600</option>
-      <option value="800" selected>800 × 800</option>
-      <option value="1000">1000 × 1000</option>
-      <option value="1200">1200 × 1200</option>
-    </select>
-
-    <label>Global fit mode</label>
-    <select id="fitMode">
-      <option value="cover" selected>Cover (fill & crop)</option>
-      <option value="contain">Contain (fit inside)</option>
-    </select>
-
-    <label>Center tile mode</label>
-    <select id="centerMode">
-      <option value="auto">Auto (use global fit)</option>
-      <option value="contain" selected>Contain (recommended for logos)</option>
-      <option value="cover">Cover</option>
-    </select>
-
-    <label style="margin-top:12px">Actions</label>
-    <div style="display:flex; gap:8px; margin-top:6px">
-      <button id="downloadBtn" class="btn primary inline">Download PNG</button>
-      <button id="resetBtn" class="btn ghost inline">Reset Board</button>
-    </div>
-  </div>
-
-  <div class="board-card">
-    <strong id="titleGrid">3 × 3</strong>
-    <div class="small-muted">Click tiles to upload; click center to randomize</div>
-    <div class="board-outer">
-      <div id="board" class="board"></div>
-    </div>
-    <div class="library" id="imageLibrary"></div>
-  </div>
+<div>
+  <div class="board" id="board"></div>
+  <div class="library" id="library"></div>
+  <input type="file" id="fileInput" accept="image/*" style="display:none">
+  <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
 </div>
 
-<input type="file" id="fileInput" accept="image/*" style="display:none" multiple>
-<canvas id="hiddenCanvas" style="display:none"></canvas>
-
 <script>
-(function(){
-  const boardEl = document.getElementById('board');
-  const gridSizeSel = document.getElementById('gridSize');
-  const outputPxSel = document.getElementById('outputPx');
-  const fitModeSel = document.getElementById('fitMode');
-  const centerModeSel = document.getElementById('centerMode');
-  const downloadBtn = document.getElementById('downloadBtn');
-  const resetBtn = document.getElementById('resetBtn');
-  const titleGrid = document.getElementById('titleGrid');
-  const fileInput = document.getElementById('fileInput');
-  const imageLibraryDiv = document.getElementById('imageLibrary');
-  const hiddenCanvas = document.getElementById('hiddenCanvas');
+const boardEl = document.getElementById('board');
+const libraryEl = document.getElementById('library');
+const fileInput = document.getElementById('fileInput');
+const shuffleSound = document.getElementById('shuffleSound');
 
-  let grid = 3;
-  let cells = [];
-  let pendingCellIndex = null;
+const grid = 3;
+let cells = [];
+let pendingCellIndex = null;
 
-  // ---- Shared GitHub library ----
-  let libraryURLs = [
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/08d659392_Mockup7.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/1b1d214df_Mockup1.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/55fdaf344_Mockup3.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/62da92f9e_Mockup8.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/56c98e0b1_Mockup4.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/9a7405c30_Mockup6.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/d88708189_Mockup5.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(1).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(10).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(11).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(2).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(3).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(4).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(5).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(6).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(8).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(9).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download.jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/ec4023f63_Mockup2.png",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/images%20(1).jpg",
-    "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/images.jpg"
-  ];
+// --- GitHub library images ---
+const libraryURLs = [
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/08d659392_Mockup7.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/1b1d214df_Mockup1.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/55fdaf344_Mockup3.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/62da92f9e_Mockup8.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/56c98e0b1_Mockup4.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/9a7405c30_Mockup6.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/d88708189_Mockup5.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(1).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(10).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(11).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(2).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(3).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(4).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(5).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(6).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(8).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(9).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download.jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/ec4023f63_Mockup2.png",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/images%20(1).jpg",
+"https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/images.jpg"
+];
+const library = libraryURLs.map(url => { const img = new Image(); img.src = url; return img; });
 
-  let library = libraryURLs.map(url=>{
-    const img = new Image();
-    img.src = url;
-    return img;
-  });
-
-  // Show thumbnails
-  library.forEach(img=>{
-    const thumb = document.createElement('img');
-    thumb.src = img.src;
-    imageLibraryDiv.appendChild(thumb);
-  });
-
-  function init(){
-    buildEmptyCells();
-    renderBoard();
-    attachListeners();
-    updateTitle();
-  }
-
-  function buildEmptyCells(){
-    cells = new Array(grid*grid).fill(null).map(()=>({img:null,src:null}));
-  }
-
-  function attachListeners(){
-    gridSizeSel.addEventListener('change', ()=>{grid=parseInt(gridSizeSel.value,10);buildEmptyCells();renderBoard();updateTitle();});
-    fitModeSel.addEventListener('change', applyFitToDOM);
-    centerModeSel.addEventListener('change', applyFitToDOM);
-    resetBtn.addEventListener('click', ()=>{if(confirm('Reset board?')){buildEmptyCells();renderBoard();}});
-    downloadBtn.addEventListener('click', downloadPNG);
-    fileInput.addEventListener('change', handleFileSelected);
-  }
-
-  function updateTitle(){titleGrid.textContent=grid+' × '+grid;}
-
-  function renderBoard(){
-    const centerIndex = Math.floor(grid*grid/2);
-    boardEl.style.gridTemplateColumns=`repeat(${grid},1fr)`;
-    boardEl.style.gridTemplateRows=`repeat(${grid},1fr)`;
-    boardEl.innerHTML='';
-    cells.forEach((cell,i)=>{
-      const div=document.createElement('div'); div.className='cell'; div.dataset.index=i;
-      if(cell.src){const img=document.createElement('img'); img.src=cell.src; img.onload=()=>img.classList.add('loaded'); div.appendChild(img);}
-      if(i===centerIndex){
-        const hint=document.createElement('div'); hint.className='center-hint'; hint.textContent='Click to randomize others • Double-click to change center'; div.appendChild(hint);
-        div.addEventListener('click', animateRandomizeUnique);
-        div.addEventListener('dblclick', ()=>{pendingCellIndex=i; fileInput.value=null; fileInput.click();});
-      }else{
-        div.addEventListener('click', ()=>{pendingCellIndex=i; fileInput.value=null; fileInput.click();});
-      }
-      boardEl.appendChild(div);
-    });
-    applyFitToDOM();
-  }
-
-  function applyFitToDOM(){
-    const globalFit=fitModeSel.value, centerPref=centerModeSel.value;
-    const centerIndex=Math.floor(grid*grid/2);
-    boardEl.querySelectorAll('.cell img').forEach((img,idx)=>{
-      let applied=globalFit;
-      if(idx===centerIndex){
-        if(centerPref==='contain') applied='contain';
-        else if(centerPref==='cover') applied='cover';
-      }
-      img.style.objectFit=applied==='contain'?'contain':'cover';
-      img.style.objectPosition='center center';
-    });
-  }
-
-  function handleFileSelected(e){
-    const f=e.target.files[0];
-    if(!f||pendingCellIndex===null) return;
-    const reader=new FileReader();
-    reader.onload=evt=>{
-      const im=new Image();
-      im.src=evt.target.result;
-      cells[pendingCellIndex]={img:im,src:evt.target.result};
+// --- Render library thumbnails ---
+library.forEach((img) => {
+  const thumb = document.createElement('img');
+  thumb.src = img.src;
+  thumb.addEventListener('click', () => {
+    if(pendingCellIndex!==null){
+      cells[pendingCellIndex] = { img, src: img.src };
       renderBoard();
-      pendingCellIndex=null;
-    };
-    reader.readAsDataURL(f);
-  }
+      pendingCellIndex = null;
+    }
+  });
+  libraryEl.appendChild(thumb);
+});
 
-  function animateRandomizeUnique(){
-    const cellEls=boardEl.querySelectorAll('.cell');
-    cellEls.forEach((c,i)=>{if(i!==Math.floor(grid*grid/2)){c.style.transform='rotateY(360deg)'; c.style.boxShadow='0 10px 20px rgba(0,0,0,0.2)';}});
-    setTimeout(()=>{
-      randomizeFromLibraryUnique();
-      cellEls.forEach(c=>{c.style.transform=''; c.style.boxShadow='';});
-    },500);
-  }
+// --- Initialize cells ---
+function init(){
+  cells = Array(grid*grid).fill(null).map(()=>({img:null,src:null}));
+  renderBoard();
+}
 
-  function randomizeFromLibraryUnique(){
-    if(library.length===0){alert('Library is empty'); return;}
-    const total=grid*grid;
-    const centerIndex=Math.floor(total/2);
-    let shuffled = [...library];
-    for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
-    for(let i=0,libIdx=0;i<total;i++){
-      if(i!==centerIndex){
-        cells[i]={img:shuffled[libIdx % shuffled.length],src:shuffled[libIdx % shuffled.length].src};
-        libIdx++;
+// --- Render board ---
+function renderBoard(){
+  const centerIndex = Math.floor(grid*grid/2);
+  boardEl.innerHTML = '';
+  cells.forEach((cell, i) => {
+    const div = document.createElement('div');
+    div.className = 'cell';
+    if(i===centerIndex) div.classList.add('center');
+    div.dataset.index = i;
+
+    const innerDiv = document.createElement('div');
+    innerDiv.className='cell-inner';
+    if(cell.src){
+      const imgEl = document.createElement('img');
+      imgEl.src = cell.src;
+      innerDiv.appendChild(imgEl);
+    }
+    div.appendChild(innerDiv);
+
+    if(i===centerIndex){
+      const hint = document.createElement('div');
+      hint.className = 'center-hint';
+      hint.textContent = 'Click to randomize others • Double-click to change center';
+      div.appendChild(hint);
+      div.addEventListener('click', ()=>randomizeOtherTiles(true));
+      div.addEventListener('dblclick', ()=>{ pendingCellIndex=i; fileInput.value=null; fileInput.click(); });
+    } else {
+      div.addEventListener('click', ()=>{ pendingCellIndex=i; fileInput.value=null; fileInput.click(); });
+    }
+
+    boardEl.appendChild(div);
+  });
+}
+
+// --- Particle effect based on image average color ---
+function createParticles(x,y, img){
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 1;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img,0,0,1,1);
+  const data = ctx.getImageData(0,0,1,1).data;
+  const color = `rgb(${data[0]},${data[1]},${data[2]})`;
+
+  for(let i=0;i<20;i++){
+    const p = document.createElement('div');
+    p.className='particle';
+    p.style.background=color;
+    const angle=Math.random()*2*Math.PI;
+    const distance=30+Math.random()*50;
+    p.style.setProperty('--x', `${Math.cos(angle)*distance}px`);
+    p.style.setProperty('--y', `${Math.sin(angle)*distance}px`);
+    p.style.left=`${x}px`;
+    p.style.top=`${y}px`;
+    boardEl.appendChild(p);
+    setTimeout(()=>p.remove(),800);
+  }
+}
+
+// --- Randomize non-center tiles with flip + sound + colored particles ---
+function randomizeOtherTiles(animated=false){
+  shuffleSound.currentTime=0;
+  shuffleSound.play();
+  const centerIndex = Math.floor(grid*grid/2);
+  let shuffled = [...library];
+  for(let i=shuffled.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]]; }
+
+  cells.forEach((cell,i)=>{
+    if(i!==centerIndex){
+      const div = boardEl.children[i];
+      const inner = div.querySelector('.cell-inner');
+      if(animated){
+        inner.style.transform='rotateY(180deg)';
+        const rect=div.getBoundingClientRect();
+        createParticles(
+          rect.left-rect.parentElement.getBoundingClientRect().left + rect.width/2,
+          rect.top-rect.parentElement.getBoundingClientRect().top + rect.height/2,
+          shuffled[i%shuffled.length]
+        );
+        setTimeout(()=>{
+          cells[i]={ img:shuffled[i%shuffled.length], src:shuffled[i%shuffled.length].src };
+          renderBoard();
+        },300);
+      } else {
+        cells[i]={ img:shuffled[i%shuffled.length], src:shuffled[i%shuffled.length].src };
       }
     }
+  });
+
+  if(!animated) renderBoard();
+}
+
+// --- Handle file upload ---
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if(!file || pendingCellIndex===null) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    const im = new Image();
+    im.src = evt.target.result;
+    cells[pendingCellIndex] = { img: im, src: evt.target.result };
     renderBoard();
-  }
+    pendingCellIndex = null;
+  };
+  reader.readAsDataURL(file);
+});
 
-  async function downloadPNG(){
-    const outputPx=parseInt(outputPxSel.value)||800; const canvas=hiddenCanvas; canvas.width=outputPx; canvas.height=outputPx;
-    const ctx=canvas.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,canvas.width,canvas.height);
-    const cellPx=canvas.width/grid; const globalFit=fitModeSel.value; const centerPref=centerModeSel.value;
-    await Promise.all(cells.map(c=>new Promise(res=>{ if(!c||!c.src) return res(); if(c.img.complete) return res(); c.img.onload=res; c.img.onerror=res;})));
-    for(let r=0;r<grid;r++){for(let c=0;c<grid;c++){const idx=r*grid+c; const item=cells[idx]; const x=c*cellPx; const y=r*cellPx; if(!item||!item.img){ctx.fillStyle='#f3f4f6';ctx.fillRect(x,y,cellPx,cellPx); continue;} let applied=globalFit; const centerIndex=Math.floor(grid*grid/2); if(idx===centerIndex){if(centerPref==='contain')applied='contain'; else if(centerPref==='cover')applied='cover';} drawImageWithFit(ctx,item.img,x,y,cellPx,cellPx,applied);}} 
-    ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=Math.max(1,Math.floor(canvas.width/400)); for(let i=1;i<grid;i++){const pos=i*cellPx; ctx.beginPath();ctx.moveTo(pos,0);ctx.lineTo(pos,canvas.height); ctx.stroke(); ctx.beginPath();ctx.moveTo(0,pos);ctx.lineTo(canvas.width,pos); ctx.stroke();}
-    const a=document.createElement('a'); a.href=canvas.toDataURL('image/png'); a.download=`collage-${grid}x${grid}-${outputPx}px.png`; document.body.appendChild(a); a.click(); a.remove();
-  }
-
-  function drawImageWithFit(ctx,img,dx,dy,dw,dh,mode){
-    const iw=img.naturalWidth||img.width; const ih=img.naturalHeight||img.height;
-    if(!iw||!ih) return;
-    if(mode==='contain'){const scale=Math.min(dw/iw,dh/ih); const sw=iw*scale; const sh=ih*scale; ctx.drawImage(img,0,0,iw,ih,dx+(dw-sw)/2,dy+(dh-sh)/2,sw,sh);}
-    else{const scale=Math.max(dw/iw,dh/ih); const sw=iw*scale; const sh=ih*scale; ctx.drawImage(img,0,0,iw,ih,dx+(dw-sw)/2,dy+(dh-sh)/2,sw,sh);}
-  }
-
-  init();
-})();
+// --- Initialize app ---
+init();
 </script>
 </body>
 </html>
