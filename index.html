@@ -12,16 +12,18 @@ body {
   flex-direction: column;
   align-items: center;
   padding: 20px;
+  margin: 0;
 }
 
 .board {
   display: grid;
-  gap: 6px;
+  gap: 4px;
   background: #eef2ff;
-  padding: 12px;
+  padding: 8px;
   border-radius: 12px;
-  width: 600px;
-  height: 600px;
+  width: 90vw; /* responsive width */
+  max-width: 600px; /* limits on large screens */
+  aspect-ratio: 1/1; /* maintain square board */
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
 }
@@ -68,9 +70,11 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
+  z-index: 10;
   color: #fff;
   font-weight: bold;
-  font-size: 18px;
+  font-size: 4vw; /* responsive font size */
+  max-font-size: 18px;
   text-align: center;
   display: flex;
   align-items: center;
@@ -78,17 +82,18 @@ body {
   background: rgba(0, 0, 0, 0.25);
   border-radius: 8px;
   pointer-events: none;
+  text-shadow: 1px 1px 3px #000;
   animation: pridePulse 3s infinite;
 }
 
 @keyframes pridePulse {
-  0% { box-shadow: 0 0 10px #E40303; transform: scale(1); } /* red */
-  16% { box-shadow: 0 0 15px #FF8C00; transform: scale(1.02); } /* orange */
-  32% { box-shadow: 0 0 20px #FFED00; transform: scale(1.03); } /* yellow */
-  48% { box-shadow: 0 0 25px #008026; transform: scale(1.04); } /* green */
-  64% { box-shadow: 0 0 25px #004DFF; transform: scale(1.03); } /* blue */
-  80% { box-shadow: 0 0 20px #750787; transform: scale(1.02); } /* purple */
-  100% { box-shadow: 0 0 10px #E40303; transform: scale(1); } /* back to red */
+  0% { box-shadow: 0 0 10px #E40303; transform: scale(1); }
+  16% { box-shadow: 0 0 15px #FF8C00; transform: scale(1.02); }
+  32% { box-shadow: 0 0 20px #FFED00; transform: scale(1.03); }
+  48% { box-shadow: 0 0 25px #008026; transform: scale(1.04); }
+  64% { box-shadow: 0 0 25px #004DFF; transform: scale(1.03); }
+  80% { box-shadow: 0 0 20px #750787; transform: scale(1.02); }
+  100% { box-shadow: 0 0 10px #E40303; transform: scale(1); }
 }
 
 .library {
@@ -101,6 +106,8 @@ body {
   padding: 6px;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
+  width: 90vw;
+  max-width: 600px;
 }
 
 .library img {
@@ -111,6 +118,12 @@ body {
   cursor: pointer;
   border: 1px solid #cbd5e1;
 }
+
+@media (max-width: 480px){
+  .center-overlay { font-size: 5vw; }
+  .library img { width: 40px; height: 40px; }
+  .board { gap: 3px; padding: 4px; }
+}
 </style>
 </head>
 <body>
@@ -120,6 +133,7 @@ body {
 <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
 
 <script>
+// JavaScript remains almost the same
 const boardEl = document.getElementById('board');
 const libraryEl = document.getElementById('library');
 const shuffleSound = document.getElementById('shuffleSound');
@@ -154,14 +168,30 @@ const libraryURLs = [
 ];
 const library = libraryURLs.map(url => { const img = new Image(); img.src = url; return img; });
 
-// Initialize board
 function init(){
   cells = Array(grid*grid).fill(null).map(()=>({ img:null, src:null }));
+  
+  const centerIndex = Math.floor(grid*grid/2);
+
+  // Pre-fill non-center cells with random images
+  let shuffled = [...library];
+  for(let i=shuffled.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
+  }
+
+  let libIdx = 0;
+  cells.forEach((cell, i) => {
+    if(i !== centerIndex){
+      cells[i] = { img: shuffled[libIdx], src: shuffled[libIdx].src };
+      libIdx++;
+    }
+  });
+
   renderBoard();
   renderLibrary();
 }
 
-// Render library thumbnails
 function renderLibrary(){
   library.forEach(img => {
     const thumb = document.createElement('img');
@@ -174,7 +204,6 @@ function renderLibrary(){
   });
 }
 
-// Render board
 function renderBoard(){
   const centerIndex = Math.floor(grid*grid/2);
   boardEl.innerHTML = '';
@@ -190,7 +219,6 @@ function renderBoard(){
     imgEl.src = (i===centerIndex) ? centerImageSrc : (cell.src || '');
     innerDiv.appendChild(imgEl);
 
-    // Center overlay text
     if(i===centerIndex){
       const overlay = document.createElement('div');
       overlay.className='center-overlay';
@@ -201,7 +229,6 @@ function renderBoard(){
 
     div.appendChild(innerDiv);
 
-    // Drag & drop for non-center
     if(i!==centerIndex){
       div.addEventListener('dragover', e=>e.preventDefault());
       div.addEventListener('drop', e=>{
@@ -216,7 +243,6 @@ function renderBoard(){
   });
 }
 
-// Randomize non-center tiles with smooth flip
 function randomizeOtherTiles(){
   shuffleSound.currentTime=0;
   shuffleSound.play();
@@ -243,7 +269,6 @@ function randomizeOtherTiles(){
   });
 }
 
-// Initialize app
 init();
 </script>
 </body>
