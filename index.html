@@ -252,7 +252,7 @@ function renderBoard(){
     if(i===centerIndex){
       const overlay = document.createElement('div');
       overlay.className='center-overlay';
-      overlay.textContent = "Click Me to Shuffle!";
+      overlay.textContent = "Click to Shuffle!";
       div.appendChild(overlay);
       div.addEventListener('click', randomizeOtherTiles);
     }
@@ -318,3 +318,4 @@ init();
 </script>
 </body>
 </html>
+
