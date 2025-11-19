@@ -34,10 +34,6 @@ body {
   align-items: center;
   justify-content: center;
   position: relative;
-}
-
-/* Hand cursor for all interactive tiles */
-.cell {
   cursor: pointer;
 }
 
@@ -82,15 +78,14 @@ body {
   text-shadow: 1px 1px 3px #000;
 }
 
-/* Zoom effect for outer squares */
 .cell:not(.center):hover .cell-inner {
-  transform: scale(1.1) rotateY(10deg); /* zoom + small tilt */
+  transform: scale(1.1) rotateY(10deg);
 }
 
-/* Auto-scrolling library */
+/* Library styling */
 .library {
   display: flex;
-  overflow-x: hidden;
+  overflow-x: auto;       /* allow manual scroll */
   gap: 6px;
   max-height: 100px;
   margin-top: 12px;
@@ -105,10 +100,11 @@ body {
 .library-inner {
   display: flex;
   gap: 6px;
-  animation: scrollLeft 20s linear infinite;
+  width: max-content;
+  animation: scrollLibrary 20s linear infinite;
 }
 
-@keyframes scrollLeft {
+@keyframes scrollLibrary {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
@@ -123,18 +119,49 @@ body {
   border: 1px solid #cbd5e1;
 }
 
+/* Nyan cat track */
+.nyan-track {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  height: 50px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.nyan-cat {
+  position: absolute;
+  top: 0;
+  width: 64px;
+  height: 64px;
+  transform: scaleX(-1); /* invert horizontally */
+  animation: nyanMove 10s linear infinite;
+}
+
+@keyframes nyanMove {
+  0% { left: 100%; }
+  100% { left: -70px; }
+}
+
 @media (max-width: 480px){
   .library img { width: 40px; height: 40px; }
   .board { gap: 3px; }
+  .nyan-cat { width: 48px; height: 48px; }
 }
 </style>
 </head>
 <body>
 
 <div class="board" id="board"></div>
+
 <div class="library" id="library">
   <div class="library-inner" id="libraryInner"></div>
 </div>
+
+<div class="nyan-track">
+  <img src="https://media.giphy.com/media/sIIhZliB2McAo/giphy.gif" class="nyan-cat">
+</div>
+
 <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
 
 <script>
@@ -176,7 +203,6 @@ function init(){
   cells = Array(grid*grid).fill(null).map(()=>({ img:null, src:null }));
   const centerIndex = Math.floor(grid*grid/2);
 
-  // Default random images
   let shuffled = [...library];
   for(let i=shuffled.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -198,7 +224,7 @@ function init(){
 
 function renderLibrary(){
   libraryInner.innerHTML = '';
-  const fullList = [...library, ...library];
+  const fullList = [...library, ...library]; // duplicate for infinite loop
   fullList.forEach(img=>{
     const thumb = document.createElement('img');
     thumb.src = img.src;
@@ -275,7 +301,6 @@ function randomizeOtherTiles(){
   });
 }
 
-// Enable zoom on mobile tap
 function enableMobileZoom(){
   document.querySelectorAll('.cell:not(.center)').forEach(cell=>{
     cell.addEventListener('touchstart', ()=>{
