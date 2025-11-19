@@ -84,20 +84,10 @@ body {
   text-shadow: 1px 1px 3px #000;
 }
 
-@keyframes pridePulse {
-  0% { box-shadow: 0 0 10px #E40303; transform: scale(1); }
-  16% { box-shadow: 0 0 15px #FF8C00; transform: scale(1.02); }
-  32% { box-shadow: 0 0 20px #FFED00; transform: scale(1.03); }
-  48% { box-shadow: 0 0 25px #008026; transform: scale(1.04); }
-  64% { box-shadow: 0 0 25px #004DFF; transform: scale(1.03); }
-  80% { box-shadow: 0 0 20px #750787; transform: scale(1.02); }
-  100% { box-shadow: 0 0 10px #E40303; transform: scale(1); }
-}
-
+/* Auto-scrolling library */
 .library {
   display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  overflow-x: hidden;
   gap: 6px;
   max-height: 100px;
   margin-top: 12px;
@@ -106,16 +96,18 @@ body {
   border-radius: 8px;
   width: 90vw;
   max-width: 600px;
-  scroll-behavior: smooth;
+  position: relative;
 }
 
-.library::-webkit-scrollbar {
-  height: 8px;
+.library-inner {
+  display: flex;
+  gap: 6px;
+  animation: scrollLeft 20s linear infinite;
 }
 
-.library::-webkit-scrollbar-thumb {
-  background-color: rgba(0,0,0,0.3);
-  border-radius: 4px;
+@keyframes scrollLeft {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .library img {
@@ -137,12 +129,14 @@ body {
 <body>
 
 <div class="board" id="board"></div>
-<div class="library" id="library"></div>
+<div class="library" id="library">
+  <div class="library-inner" id="libraryInner"></div>
+</div>
 <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
 
 <script>
 const boardEl = document.getElementById('board');
-const libraryEl = document.getElementById('library');
+const libraryInner = document.getElementById('libraryInner');
 const shuffleSound = document.getElementById('shuffleSound');
 
 const grid = 3;
@@ -198,18 +192,26 @@ function init(){
 }
 
 function renderLibrary(){
-  library.forEach(img=>{
+  libraryInner.innerHTML = '';
+
+  // Duplicate images for seamless scrolling
+  const fullList = [...library, ...library];
+  fullList.forEach(img=>{
     const thumb = document.createElement('img');
     thumb.src = img.src;
     thumb.draggable = true;
+
+    // Desktop drag
     thumb.addEventListener('dragstart', e=>{
       e.dataTransfer.setData('text/plain', img.src);
     });
-    // Mobile touch drag support
+
+    // Mobile touch drag
     thumb.addEventListener('touchstart', e=>{
       e.target.dataset.dragSrc = img.src;
     });
-    libraryEl.appendChild(thumb);
+
+    libraryInner.appendChild(thumb);
   });
 }
 
@@ -248,7 +250,6 @@ function renderBoard(){
           renderBoard();
         }
       });
-      // Mobile touch drop support
       div.addEventListener('touchend', e=>{
         const src = e.target.dataset?.dragSrc || e.target.closest('[data-drag-src]')?.dataset.dragSrc;
         if(src){
@@ -292,4 +293,3 @@ init();
 </script>
 </body>
 </html>
-
