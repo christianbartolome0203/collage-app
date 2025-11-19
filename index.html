@@ -3,19 +3,118 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Collage App</title>
+<title>Collage App - Pride Edition</title>
 <style>
-body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; flex-direction:column; align-items:center; padding:20px; }
-.board { display:grid; gap:6px; background:#eef2ff; padding:12px; border-radius:12px; width:600px; height:600px; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); }
-.cell { background:#eceff6; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(15,23,42,0.06); perspective:600px; position:relative; }
-.cell-inner { width:100%; height:100%; transition: transform 0.6s; transform-style: preserve-3d; }
-.cell img { width:100%; height:100%; object-fit:cover; object-position:center center; backface-visibility:hidden; border-radius:8px; }
-.cell.center img { object-fit:contain; }
-.library { display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow:auto; margin-top:12px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; }
-.library img { width:48px; height:48px; object-fit:cover; border-radius:6px; cursor:pointer; border:1px solid #cbd5e1; }
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f7fb;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.board {
+  display: grid;
+  gap: 6px;
+  background: #eef2ff;
+  padding: 12px;
+  border-radius: 12px;
+  width: 600px;
+  height: 600px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.cell {
+  background: #eceff6;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  perspective: 800px;
+  position: relative;
+}
+
+.cell-inner {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  transform-style: preserve-3d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cell img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  backface-visibility: hidden;
+  border-radius: 8px;
+}
+
+.cell.center img {
+  object-fit: contain;
+}
+
+.center-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  color: #fff;
+  font-weight: bold;
+  font-size: 18px;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  pointer-events: none;
+  animation: pridePulse 3s infinite;
+}
+
+@keyframes pridePulse {
+  0% { box-shadow: 0 0 10px #E40303; transform: scale(1); } /* red */
+  16% { box-shadow: 0 0 15px #FF8C00; transform: scale(1.02); } /* orange */
+  32% { box-shadow: 0 0 20px #FFED00; transform: scale(1.03); } /* yellow */
+  48% { box-shadow: 0 0 25px #008026; transform: scale(1.04); } /* green */
+  64% { box-shadow: 0 0 25px #004DFF; transform: scale(1.03); } /* blue */
+  80% { box-shadow: 0 0 20px #750787; transform: scale(1.02); } /* purple */
+  100% { box-shadow: 0 0 10px #E40303; transform: scale(1); } /* back to red */
+}
+
+.library {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 180px;
+  overflow: auto;
+  margin-top: 12px;
+  padding: 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.library img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+}
 </style>
 </head>
 <body>
+
 <div class="board" id="board"></div>
 <div class="library" id="library"></div>
 <audio id="shuffleSound" src="https://www.soundjay.com/button/sounds/button-16.mp3"></audio>
@@ -30,7 +129,7 @@ let cells = [];
 
 const centerImageSrc = "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/download%20(11).jpg";
 
-// Library images (excluding center)
+// Library images excluding center
 const libraryURLs = [
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/08d659392_Mockup7.png",
 "https://raw.githubusercontent.com/christianbartolome0203/collage-app/main/library/1b1d214df_Mockup1.png",
@@ -75,7 +174,7 @@ function renderLibrary(){
   });
 }
 
-// Render board with inner divs for flip animation
+// Render board
 function renderBoard(){
   const centerIndex = Math.floor(grid*grid/2);
   boardEl.innerHTML = '';
@@ -88,10 +187,18 @@ function renderBoard(){
     innerDiv.className='cell-inner';
 
     const imgEl = document.createElement('img');
-    if(i===centerIndex) imgEl.src = centerImageSrc;
-    else if(cell.src) imgEl.src = cell.src;
-
+    imgEl.src = (i===centerIndex) ? centerImageSrc : (cell.src || '');
     innerDiv.appendChild(imgEl);
+
+    // Center overlay text
+    if(i===centerIndex){
+      const overlay = document.createElement('div');
+      overlay.className='center-overlay';
+      overlay.textContent = "Click Me to Shuffle!";
+      div.appendChild(overlay);
+      div.addEventListener('click', randomizeOtherTiles);
+    }
+
     div.appendChild(innerDiv);
 
     // Drag & drop for non-center
@@ -105,16 +212,11 @@ function renderBoard(){
       });
     }
 
-    // Click center to randomize with flip
-    if(i===centerIndex){
-      div.addEventListener('click', randomizeOtherTiles);
-    }
-
     boardEl.appendChild(div);
   });
 }
 
-// Randomize non-center tiles with flip animation & sound
+// Randomize non-center tiles with smooth flip
 function randomizeOtherTiles(){
   shuffleSound.currentTime=0;
   shuffleSound.play();
@@ -131,12 +233,12 @@ function randomizeOtherTiles(){
     if(i!==centerIndex){
       const div = boardEl.children[i];
       const inner = div.querySelector('.cell-inner');
-      inner.style.transform='rotateY(180deg)'; // start flip
+      inner.style.transform='rotateY(360deg) scale(1.05)';
       setTimeout(()=>{
         cells[i]={ img:shuffled[libIdx], src:shuffled[libIdx].src };
         renderBoard();
         libIdx++;
-      },300);
+      }, 400);
     }
   });
 }
