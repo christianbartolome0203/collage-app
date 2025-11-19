@@ -7,10 +7,10 @@
 <style>
 body { font-family: Arial, sans-serif; background:#f4f7fb; display:flex; flex-direction:column; align-items:center; padding:20px; }
 .board { display:grid; gap:6px; background:#eef2ff; padding:12px; border-radius:12px; width:600px; height:600px; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); }
-.cell { background:#eceff6; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(15,23,42,0.06); }
-.cell img { width:100%; height:100%; object-fit:cover; object-position:center center; }
+.cell { background:#eceff6; border-radius:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; cursor:pointer; border:1px solid rgba(15,23,42,0.06); perspective:600px; position:relative; }
+.cell-inner { width:100%; height:100%; transition: transform 0.6s; transform-style: preserve-3d; }
+.cell img { width:100%; height:100%; object-fit:cover; object-position:center center; backface-visibility:hidden; border-radius:8px; }
 .cell.center img { object-fit:contain; }
-.center-hint { position:absolute; bottom:4px; left:4px; right:4px; font-size:11px; text-align:center; color:rgba(0,0,0,0.45); }
 .library { display:flex; flex-wrap:wrap; gap:6px; max-height:180px; overflow:auto; margin-top:12px; padding:6px; border:1px solid #e2e8f0; border-radius:8px; }
 .library img { width:48px; height:48px; object-fit:cover; border-radius:6px; cursor:pointer; border:1px solid #cbd5e1; }
 </style>
@@ -75,21 +75,26 @@ function renderLibrary(){
   });
 }
 
-// Render board
+// Render board with inner divs for flip animation
 function renderBoard(){
   const centerIndex = Math.floor(grid*grid/2);
   boardEl.innerHTML = '';
-  cells.forEach((cell, i) => {
+  cells.forEach((cell,i)=>{
     const div = document.createElement('div');
     div.className='cell';
     if(i===centerIndex) div.classList.add('center');
 
+    const innerDiv = document.createElement('div');
+    innerDiv.className='cell-inner';
+
     const imgEl = document.createElement('img');
     if(i===centerIndex) imgEl.src = centerImageSrc;
     else if(cell.src) imgEl.src = cell.src;
-    div.appendChild(imgEl);
 
-    // Drag & Drop for non-center
+    innerDiv.appendChild(imgEl);
+    div.appendChild(innerDiv);
+
+    // Drag & drop for non-center
     if(i!==centerIndex){
       div.addEventListener('dragover', e=>e.preventDefault());
       div.addEventListener('drop', e=>{
@@ -100,7 +105,7 @@ function renderBoard(){
       });
     }
 
-    // Click center to randomize
+    // Click center to randomize with flip
     if(i===centerIndex){
       div.addEventListener('click', randomizeOtherTiles);
     }
@@ -109,7 +114,7 @@ function renderBoard(){
   });
 }
 
-// Randomize non-center tiles
+// Randomize non-center tiles with flip animation & sound
 function randomizeOtherTiles(){
   shuffleSound.currentTime=0;
   shuffleSound.play();
@@ -120,14 +125,20 @@ function randomizeOtherTiles(){
     const j=Math.floor(Math.random()*(i+1));
     [shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];
   }
-  let libIdx = 0;
-  for(let i=0;i<grid*grid;i++){
+
+  let libIdx=0;
+  cells.forEach((cell,i)=>{
     if(i!==centerIndex){
-      cells[i]={ img:shuffled[libIdx], src:shuffled[libIdx].src };
-      libIdx++;
+      const div = boardEl.children[i];
+      const inner = div.querySelector('.cell-inner');
+      inner.style.transform='rotateY(180deg)'; // start flip
+      setTimeout(()=>{
+        cells[i]={ img:shuffled[libIdx], src:shuffled[libIdx].src };
+        renderBoard();
+        libIdx++;
+      },300);
     }
-  }
-  renderBoard();
+  });
 }
 
 // Initialize app
